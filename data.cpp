@@ -21,12 +21,15 @@ public:
         history.push(msg);
     }
 
-    static void displayHistory() {
+    static void displayHistory(const string& currentUser = "", bool publicOnly = false) {
         stack<Message> temp = history;
         while (!temp.empty()) {
             Message msg = temp.top();
             temp.pop();
-            cout << msg.sender << " to " << msg.receiver << ": " << msg.message << endl;
+            if (publicOnly && msg.receiver != "ALL") continue;
+            if (currentUser.empty() || msg.sender == currentUser || msg.receiver == currentUser || msg.receiver == "ALL") {
+                cout << msg.sender << " to " << msg.receiver << ": " << msg.message << endl;
+            }
         }
     }
 };
@@ -47,8 +50,12 @@ public:
     virtual void sendMessage() = 0;
     virtual void getMessage() = 0;
 
-    virtual bool validateCredentials(const string& enteredUserName, const string& enteredPassword) {
+    bool validateCredentials(const string& enteredUserName, const string& enteredPassword) {
         return (enteredUserName == userName && enteredPassword == password);
+    }
+
+    string getUserName() const {
+        return userName;
     }
 };
 
@@ -61,15 +68,14 @@ public:
         string receiver;
         cin.ignore();
         getline(cin, receiver);
-        if(receiver!="ALL"&&!((adminsList.find(receiver) != adminsList.end())||(RegularUsersList.find(receiver) != RegularUsersList.end()))){
-            cout<<"ERROR: Reciever ID Not Found\n";
+        if (receiver != "ALL" && !(adminsList.count(receiver) || RegularUsersList.count(receiver))) {
+            cout << "ERROR: Receiver ID Not Found\n";
             return;
         }
         cout << "Typing message: ";
         string mes;
         getline(cin, mes);
-        Message newMessage(mes, userName, receiver);
-        ChatHistory::addMessage(newMessage);
+        ChatHistory::addMessage({mes, userName, receiver});
     }
 
     void getMessage() override {
@@ -83,41 +89,39 @@ public:
     RegularUser(string userName, string password) : User(userName, password) {}
 
     void sendMessage() override {
-        cout << "Enter the Receiver's ID (Enter 'ALL' to send message to all users): ";
+        cout << "Enter the Receiver's ID: ";
         string receiver;
         cin.ignore();
         getline(cin, receiver);
-        if(receiver!="ALL"&&!((adminsList.find(receiver) != adminsList.end())||(RegularUsersList.find(receiver) != RegularUsersList.end()))){
-            cout<<"ERROR: Reciever ID Not Found\n";
+        if (!(adminsList.count(receiver) || RegularUsersList.count(receiver))) {
+            cout << "ERROR: Receiver ID Not Found\n";
             return;
         }
         cout << "Typing message: ";
         string mes;
         getline(cin, mes);
-        Message newMessage(mes, userName, receiver);
-        ChatHistory::addMessage(newMessage);
+        ChatHistory::addMessage({mes, userName, receiver});
     }
 
     void getMessage() override {
-        cout << "Chat History (for "<<userName<<"):\n";
-        ChatHistory::displayHistory();
+        cout << "Chat History (for " << userName << "):\n";
+        ChatHistory::displayHistory(userName);
     }
 };
 
 class Guest : public User {
 public:
-    Guest(string userName, string password) : User(userName, password) {}
+    Guest(string userName) : User(userName, "") {}
 
     void sendMessage() override {
-        cout << "Guests cannot send messages.\n";
+        cout << "PERMISSION DENIED: Guests cannot send messages.\n";
     }
 
     void getMessage() override {
         cout << "Chat History (for Guest):\n";
-        ChatHistory::displayHistory();
+        ChatHistory::displayHistory("", true);
     }
 };
-
 
 void createUserAccount(char userType) {
     string userName, password;
@@ -126,58 +130,39 @@ void createUserAccount(char userType) {
     cin >> userName;
     cout << "Enter a password: ";
     cin >> password;
-     if ((adminsList.find(userName) != adminsList.end())||(RegularUsersList.find(userName) != RegularUsersList.end())) {
-                cout << "Username already exists! Choose a different username.\n";
-                return;
-            }
-    switch(userType){
-        case 'A':{
-            adminsList[userName] = password;
-            break;
-        }
-        case 'R':{
-            RegularUsersList[userName]=password;
-            break;
-        }
+    if (adminsList.count(userName) || RegularUsersList.count(userName)) {
+        cout << "Username already exists! Choose a different username.\n";
+        return;
     }
+    if (userType == 'A') adminsList[userName] = password;
+    else RegularUsersList[userName] = password;
 
     cout << "Account created successfully!\n";
 }
 
 bool validateUser(char userType, string userName, string password) {
-    
-    unordered_map<string, string> *typeList=nullptr;
-    switch(userType){
-        case 'A':{
-            typeList = &adminsList;
-            break;
-        }
-        case 'R':{
-           typeList = &RegularUsersList;
-           break;
-        }
-    }
+    unordered_map<string, string>* typeList = (userType == 'A') ? &adminsList : &RegularUsersList;
     auto it = typeList->find(userName);
     if (it != typeList->end() && it->second == password) {
-        cout <<userName << " login successful!\n";
+        cout << userName << " login successful!\n";
         return true;
-    } 
-    else {
-        cout << "Invalid username or password.\n";
-        return false;
     }
+    cout << "Invalid username or password.\n";
+    return false;
 }
 
 int main() {
+start:
     cout << "WELCOME TO THE CHAT!\n";
     cout << "1. Create an Admin Account\n";
     cout << "2. Create a Regular User Account\n";
-    cout << "3. Create a Guest Account\n";
-    cout << "4. Login as Admin\n";
-    cout << "5. Login as Regular User\n";
-    cout << "6. Login as Guest\n";
+    cout << "3. Login as Admin\n";
+    cout << "4. Login as Regular User\n";
+    cout << "5. Temporarily Login as Guest\n";
+    cout << "6. Exit the Secure Messaging System\n";
 
-    while(true){
+    while (true) {
+        cout << "MAIN MENU: Enter your choice: ";
         int choice;
         cin >> choice;
 
@@ -188,10 +173,7 @@ int main() {
         case 2:
             createUserAccount('R');
             break;
-        case 3:
-            createUserAccount('G');
-            break;
-        case 4: {
+        case 3: {
             string userName, password;
             cout << "Enter your username: ";
             cin >> userName;
@@ -199,12 +181,26 @@ int main() {
             cin >> password;
             if (validateUser('A', userName, password)) {
                 Admin admin(userName, password);
-                admin.sendMessage();
-                admin.getMessage();
+                cout << "WELCOME TO ADMIN CHAT!\n";
+                cout << "1. Send a Message\n";
+                cout << "2. View Group Chat History\n";
+                cout << "5. Logout from Admin Account\n";
+                while (true) {
+                    cout << "ADMIN MENU: Enter your choice: ";
+                    int secondChoice;
+                    cin >> secondChoice;
+                    switch (secondChoice) {
+                    case 1: admin.sendMessage(); break;
+                    case 2: admin.getMessage(); break;
+                    case 5: goto start;
+                    default: cout << "Invalid Choice!\n";
+                    }
+                    cout << "\n";
+                }
             }
             break;
         }
-        case 5: {
+        case 4: {
             string userName, password;
             cout << "Enter your username: ";
             cin >> userName;
@@ -212,19 +208,50 @@ int main() {
             cin >> password;
             if (validateUser('R', userName, password)) {
                 RegularUser ru(userName, password);
-                ru.sendMessage();
-                ru.getMessage();
+                cout << "WELCOME TO REGULAR USER CHAT!\n";
+                cout << "1. Send a Message\n";
+                cout << "2. View Group Chat History\n";
+                cout << "5. Logout from Regular User Account\n";
+                while (true) {
+                    cout << "REGULAR USER MENU: Enter your choice: ";
+                    int secondChoice;
+                    cin >> secondChoice;
+                    switch (secondChoice) {
+                    case 1: ru.sendMessage(); break;
+                    case 2: ru.getMessage(); break;
+                    case 5: goto start;
+                    default: cout << "Invalid Choice!\n";
+                    }
+                    cout << "\n";
+                }
             }
             break;
         }
-        case 6: {
-            Guest guest("Guest", "");
-            guest.getMessage();
+        case 5: {
+            Guest guest("Guest");
+            cout << "WELCOME TO GUEST USER CHAT!\n";
+            cout << "1. View Group Chat History\n";
+            cout << "3. Logout from Guest Account\n";
+            while (true) {
+                cout << "GUEST MENU: Enter your choice: ";
+                int secondChoice;
+                cin >> secondChoice;
+                switch (secondChoice) {
+                case 1: guest.getMessage(); break;
+                case 3: goto start;
+                default: cout << "Invalid Choice!\n";
+                }
+                cout << "\n";
+            }
             break;
         }
+        case 6:
+            cout << "EXITING... SEE YOU LATER...\n";
+            exit(0);
         default:
             cout << "Invalid choice.\n";
         }
+        cout << "\n\n";
     }
 
     return 0;
