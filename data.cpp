@@ -153,13 +153,13 @@ bool validateUser(char userType, string userName, string password) {
 
 int main() {
 start:
-    cout << "WELCOME TO THE CHAT!\n";
+    cout << "\nWELCOME TO THE CHAT!\n";
     cout << "1. Create an Admin Account\n";
     cout << "2. Create a Regular User Account\n";
     cout << "3. Login as Admin\n";
     cout << "4. Login as Regular User\n";
     cout << "5. Temporarily Login as Guest\n";
-    cout << "6. Exit the Secure Messaging System\n";
+    cout << "6. Exit the Secure Messaging System\n"<<endl;
 
     while (true) {
         cout << "MAIN MENU: Enter your choice: ";
@@ -167,32 +167,37 @@ start:
         cin >> choice;
 
         switch (choice) {
-        case 1:
+        case 1:{
+            cout<<"ADMIN ACCOUNT CREATION:\n";
             createUserAccount('A');
             break;
-        case 2:
+        }
+        case 2:{
+            cout<<"REGULAR ACCOUNT CREATION:\n";
             createUserAccount('R');
             break;
+        }
         case 3: {
             string userName, password;
+            cout<<"ADMIN VERIFICATION:\n";
             cout << "Enter your username: ";
             cin >> userName;
             cout << "Enter your password: ";
             cin >> password;
             if (validateUser('A', userName, password)) {
                 Admin admin(userName, password);
-                cout << "WELCOME TO ADMIN CHAT!\n";
+                cout << "\nWELCOME TO ADMIN CHAT!\n";
                 cout << "1. Send a Message\n";
                 cout << "2. View Group Chat History\n";
-                cout << "5. Logout from Admin Account\n";
+                cout << "3. Logout from Admin Account\n";
                 while (true) {
-                    cout << "ADMIN MENU: Enter your choice: ";
+                    cout << "\nADMIN MENU: Enter your choice: ";
                     int secondChoice;
                     cin >> secondChoice;
                     switch (secondChoice) {
                     case 1: admin.sendMessage(); break;
                     case 2: admin.getMessage(); break;
-                    case 5: goto start;
+                    case 3: goto start;
                     default: cout << "Invalid Choice!\n";
                     }
                     cout << "\n";
@@ -202,24 +207,25 @@ start:
         }
         case 4: {
             string userName, password;
+            cout<<"REGULAR USER VERFICATION:\n";
             cout << "Enter your username: ";
             cin >> userName;
             cout << "Enter your password: ";
             cin >> password;
             if (validateUser('R', userName, password)) {
                 RegularUser ru(userName, password);
-                cout << "WELCOME TO REGULAR USER CHAT!\n";
+                cout << "\nWELCOME TO REGULAR USER CHAT!\n";
                 cout << "1. Send a Message\n";
                 cout << "2. View Group Chat History\n";
-                cout << "5. Logout from Regular User Account\n";
+                cout << "3. Logout from Regular User Account\n";
                 while (true) {
-                    cout << "REGULAR USER MENU: Enter your choice: ";
+                    cout << "\nREGULAR USER MENU: Enter your choice: ";
                     int secondChoice;
                     cin >> secondChoice;
                     switch (secondChoice) {
                     case 1: ru.sendMessage(); break;
                     case 2: ru.getMessage(); break;
-                    case 5: goto start;
+                    case 3: goto start;
                     default: cout << "Invalid Choice!\n";
                     }
                     cout << "\n";
@@ -231,13 +237,15 @@ start:
             Guest guest("Guest");
             cout << "WELCOME TO GUEST USER CHAT!\n";
             cout << "1. View Group Chat History\n";
+            cout << "2. Send Messages to the Group Chat\n";
             cout << "3. Logout from Guest Account\n";
             while (true) {
-                cout << "GUEST MENU: Enter your choice: ";
+                cout << "\nGUEST MENU: Enter your choice: ";
                 int secondChoice;
                 cin >> secondChoice;
                 switch (secondChoice) {
                 case 1: guest.getMessage(); break;
+                case 2: guest.sendMessage(); break;
                 case 3: goto start;
                 default: cout << "Invalid Choice!\n";
                 }
